@@ -16,6 +16,8 @@
 #define GRID_HEIGHT 200
 #define SWITCHES_BASE_ADDRESS 0xFF200040 // Example address
 #define KEYS_BASE_ADDRESS 0xFF200050 // Example address
+#define SEG7_DISPLAY 0xFF200020 // Example address for Player 1's score display
+#define SEGMENT_OFFSET 4 
 
 // RGB565 Colors for game
 const unsigned short RGB565_COLORS[COLOR_COUNT] = {
@@ -32,12 +34,15 @@ int checkAdjacent(unsigned short board[BOARD_SIZE][BOARD_SIZE], int row, int col
 void printBoard(unsigned short board[BOARD_SIZE][BOARD_SIZE]);
 void fill(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player, unsigned short color);
 void changePlayer(int *currentPlayer);
-int countScore(int playerBoard[BOARD_SIZE][BOARD_SIZE], int player);
+int calculateScore(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player);
 int isGameOver(int playerBoard[BOARD_SIZE][BOARD_SIZE]);
+void dfsCount(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], bool visited[BOARD_SIZE][BOARD_SIZE], int x, int y, unsigned short color, int* score); 
 void vsync();
 void plot_pixel(int, int, short int);
 void draw_square(int, int, short int);
 void printBoardVGA(unsigned short board[BOARD_SIZE][BOARD_SIZE]);
+void display_score(int score, volatile unsigned int* seg7_display);
+int calculateScore(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player);
 
 typedef struct {
     int x, y;
@@ -103,10 +108,24 @@ int main() {
 
             // Ensure only the current player's corner color changes
             fill(playerBoard, board, currentPlayer, selectedColor);
-
+			
             printBoardVGA(board); // Update the VGA display with the new board state
+			
+ 			int scorePlayer1 = calculateScore(playerBoard, board, PLAYER1);
+            int scorePlayer2 = calculateScore(playerBoard, board, PLAYER2);
+			
+			printf("Player 1's score: %d\n", scorePlayer1);
+			printf("Player 2's score: %d\n", scorePlayer2);
+				   
+   		 	// Display scores on 7-segment displays
+    		// Assuming 'display_score' can target individual segments, and we have a mechanism to specify which
+			display_score(scorePlayer1, (volatile unsigned int*)(SEG7_DISPLAY + 2 * SEGMENT_OFFSET)); // For Player 1's score on display 2
+			display_score(scorePlayer1, (volatile unsigned int*)(SEG7_DISPLAY + 3 * SEGMENT_OFFSET)); // For Player 1's score on display 3
 
-            gameEnd = isGameOver(playerBoard);
+			display_score(scorePlayer2, (volatile unsigned int*)(SEG7_DISPLAY + 0 * SEGMENT_OFFSET)); // For Player 2's score on display 0
+			display_score(scorePlayer2, (volatile unsigned int*)(SEG7_DISPLAY + 1 * SEGMENT_OFFSET)); // For Player 2's score on display 1
+
+			gameEnd = isGameOver(playerBoard);
             if (!gameEnd) {
                 changePlayer(&currentPlayer); // Switch players if the game continues
             }
@@ -119,15 +138,15 @@ int main() {
 
 
     // Determine winner
-    int player1Score = countScore(playerBoard, PLAYER1);
-    int player2Score = countScore(playerBoard, PLAYER2);
-    if (player1Score > player2Score) {
-        printf("Player 1 wins!\n");
-    } else if (player2Score > player1Score) {
-        printf("Player 2 wins!\n");
-    } else {
-        printf("It's a tie!\n");
-    }
+    // int player1Score = countScore(playerBoard, PLAYER1);
+    // int player2Score = countScore(playerBoard, PLAYER2);
+    //if (player1Score > player2Score) {
+        //printf("Player 1 wins!\n");
+    //} else if (player2Score > player1Score) {
+        //printf("Player 2 wins!\n");
+    //} else {
+        //printf("It's a tie!\n");
+    //}
 
     return 0;
 }
@@ -215,20 +234,10 @@ void fill(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SI
 }
 
 
+
 // Change the current player.
 void changePlayer(int *currentPlayer) {
     *currentPlayer = (*currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
-}
-
-// Count the number of blocks owned by a player.
-int countScore(int playerBoard[BOARD_SIZE][BOARD_SIZE], int player) {
-    int score = 0;
-    for (int row = 0; row < BOARD_SIZE; row++) {
-        for (int col = 0; col < BOARD_SIZE; col++) {
-            if (playerBoard[row][col] == player) score++;
-        }
-    }
-    return score;
 }
 
 // Check if the game is over (no empty blocks remaining).
@@ -288,3 +297,49 @@ void vsync()
 	}
 }
 
+void display_score(int score, volatile unsigned int* seg7_display) {
+    unsigned int display_val = 0; // Placeholder for encoding numbers to 7-segment
+
+    // Logic to encode 'score' to the 7-segment display bit pattern
+    // This is highly dependent on your FPGA's 7-segment display configuration
+    // Example for encoding '0' to '9' on a common cathode 7-segment display
+    unsigned int numbers[10] = {0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F};
+    if (score >= 0 && score <= 9) {
+        display_val = numbers[score];
+    } else {
+        display_val = 0; // Default or error pattern
+    }
+
+    *seg7_display = display_val; // Write to the 7-segment display
+}
+
+void dfsCount(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], bool visited[BOARD_SIZE][BOARD_SIZE], int x, int y, unsigned short color, int* score) {
+    // Check bounds and whether the block has been visited or not
+    if (x < 0 || x >= BOARD_SIZE || y < 0 || y >= BOARD_SIZE || visited[x][y] || board[x][y] != color) {
+        return;
+    }
+
+    visited[x][y] = true; // Mark the block as visited
+    (*score)++; // Increment the score for each block of the same color
+
+    // Explore adjacent blocks in all four directions
+    dfsCount(playerBoard, board, visited, x + 1, y, color, score);
+    dfsCount(playerBoard, board, visited, x - 1, y, color, score);
+    dfsCount(playerBoard, board, visited, x, y + 1, color, score);
+    dfsCount(playerBoard, board, visited, x, y - 1, color, score);
+}
+
+int calculateScore(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player) {
+    int score = 0;
+    bool visited[BOARD_SIZE][BOARD_SIZE] = {{false}};
+    unsigned short color;
+
+    // Determine the starting point based on the player
+    int startX = (player == PLAYER1) ? 0 : BOARD_SIZE - 1;
+    int startY = (player == PLAYER1) ? 0 : BOARD_SIZE - 1;
+    color = board[startX][startY];
+
+    // Perform DFS from the corner to count contiguous blocks of the same color
+    dfsCount(playerBoard, board, visited, startX, startY, color, &score);
+    return score;
+}
