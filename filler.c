@@ -87,33 +87,36 @@ int main() {
     int gameEnd = 0;
     int selectedColor;
 
-    srand(time(NULL)); // Seed for random color generation
+    srand(time(NULL));
     initializeBoard(board, playerBoard);
-    printBoard(board);
-	
+    printBoardVGA(board);
+
+    bool prevKey0Pressed = false; // Track the previous state of key 0
+
     while (!gameEnd) {
-        // Check if key 0 is pressed
-        if (read_key0()) {
-            // Read the current switch state to select the color
+        bool key0Pressed = read_key0(); // Check the current state of key 0
+
+        // Execute color change on key release (transition from pressed to not pressed)
+        if (prevKey0Pressed && !key0Pressed) {
             int switchState = read_switches();
             unsigned short selectedColor = RGB565_COLORS[switchState];
 
-            // Determine which corner to change based on the currentPlayer
-            int cornerX = (currentPlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
-            int cornerY = (currentPlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
-
-            // Fill the corner and adjacent blocks with the selected color
+            // Ensure only the current player's corner color changes
             fill(playerBoard, board, currentPlayer, selectedColor);
-			
-			 printBoardVGA(board);
 
-            // Switch to the next player
-            changePlayer(&currentPlayer);
+            printBoardVGA(board); // Update the VGA display with the new board state
+
             gameEnd = isGameOver(playerBoard);
-
-            // Optional: Implement a delay here to debounce the key press
+            if (!gameEnd) {
+                changePlayer(&currentPlayer); // Switch players if the game continues
+            }
         }
-	}
+
+        prevKey0Pressed = key0Pressed; // Update the previous key state for the next iteration
+
+        // Optional: Implement a delay here to manage game pace and debounce handling
+    }
+
 
     // Determine winner
     int player1Score = countScore(playerBoard, PLAYER1);
@@ -270,6 +273,7 @@ void printBoardVGA(unsigned short board[BOARD_SIZE][BOARD_SIZE]) {
         }
     }
 }
+
 
 void vsync()
 {
