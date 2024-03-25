@@ -16,9 +16,9 @@
 #define GRID_HEIGHT 200
 #define SWITCHES_BASE_ADDRESS 0xFF200040 // Example address
 #define KEYS_BASE_ADDRESS 0xFF200050 // Example address
-#define SEG7_DISPLAY 0xFF200020 // Example address for Player 1's score display
-#define SEGMENT_OFFSET 4 
-
+#define SEG7_DISPLAY 0xFF200020 // Base address for the 7-segment display
+#define SEGMENT_OFFSET 8 // Offset for each hex digit within the 32-bit word
+	
 // RGB565 Colors for game
 const unsigned short RGB565_COLORS[COLOR_COUNT] = {
     0xF800, // Red
@@ -41,7 +41,7 @@ void vsync();
 void plot_pixel(int, int, short int);
 void draw_square(int, int, short int);
 void printBoardVGA(unsigned short board[BOARD_SIZE][BOARD_SIZE]);
-void display_score(int score, volatile unsigned int* seg7_display);
+void display_score(int score, volatile unsigned int* seg7_display, int player);
 int calculateScore(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player);
 
 typedef struct {
@@ -119,11 +119,8 @@ int main() {
 				   
    		 	// Display scores on 7-segment displays
     		// Assuming 'display_score' can target individual segments, and we have a mechanism to specify which
-			display_score(scorePlayer1, (volatile unsigned int*)(SEG7_DISPLAY + 2 * SEGMENT_OFFSET)); // For Player 1's score on display 2
-			display_score(scorePlayer1, (volatile unsigned int*)(SEG7_DISPLAY + 3 * SEGMENT_OFFSET)); // For Player 1's score on display 3
-
-			display_score(scorePlayer2, (volatile unsigned int*)(SEG7_DISPLAY + 0 * SEGMENT_OFFSET)); // For Player 2's score on display 0
-			display_score(scorePlayer2, (volatile unsigned int*)(SEG7_DISPLAY + 1 * SEGMENT_OFFSET)); // For Player 2's score on display 1
+			display_score(scorePlayer1, (volatile unsigned int*)SEG7_DISPLAY, PLAYER1);
+            display_score(scorePlayer2, (volatile unsigned int*)SEG7_DISPLAY, PLAYER2);
 
 			gameEnd = isGameOver(playerBoard);
             if (!gameEnd) {
@@ -297,20 +294,23 @@ void vsync()
 	}
 }
 
-void display_score(int score, volatile unsigned int* seg7_display) {
-    unsigned int display_val = 0; // Placeholder for encoding numbers to 7-segment
+void display_score(int score, volatile unsigned int* seg7_display, int player) {
+    // Encode digits for a common cathode 7-segment display
+    unsigned int digits[10] = {0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F};
 
-    // Logic to encode 'score' to the 7-segment display bit pattern
-    // This is highly dependent on your FPGA's 7-segment display configuration
-    // Example for encoding '0' to '9' on a common cathode 7-segment display
-    unsigned int numbers[10] = {0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F};
-    if (score >= 0 && score <= 9) {
-        display_val = numbers[score];
-    } else {
-        display_val = 0; // Default or error pattern
-    }
+    int ones = score % 10; // Ones digit
+    int tens = (score / 10) % 10; // Tens digit
 
-    *seg7_display = display_val; // Write to the 7-segment display
+    // Calculate offsets based on player number
+    int ones_offset = (player == PLAYER1) ? 2 : 0; // Adjust for Player 1 or Player 2
+    int tens_offset = (player == PLAYER1) ? 3 : 1; // Adjust for Player 1 or Player 2
+
+    // Clear the segments for the current player's score
+    *seg7_display &= ~((0x7F << (ones_offset * SEGMENT_OFFSET)) | (0x7F << (tens_offset * SEGMENT_OFFSET)));
+
+    // Set the new score on the 7-segment display
+    *seg7_display |= (digits[ones] << (ones_offset * SEGMENT_OFFSET)); // Set ones digit
+    *seg7_display |= (digits[tens] << (tens_offset * SEGMENT_OFFSET)); // Set tens digit
 }
 
 void dfsCount(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], bool visited[BOARD_SIZE][BOARD_SIZE], int x, int y, unsigned short color, int* score) {
