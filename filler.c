@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
-
+#include <sys/time.h> // Include for gettimeofday()
+	
 #define BOARD_SIZE 8
 #define COLOR_COUNT 6
 #define EMPTY 0xFFFF // Assuming white (or any distinct color) represents an empty block in RGB565
@@ -2374,8 +2375,8 @@ int main() {
     int gameEnd = 0;
     int selectedColor;
 	bool spacebarPressed = false; 
+	srand(time(NULL));
 
-    srand(time(NULL));
     initializeBoard(board, playerBoard);
     printBoardVGA(board);
 
@@ -2383,10 +2384,9 @@ int main() {
 
     while (!gameEnd) {
         bool key0Pressed = read_key0(); // Check the current state of key 0
-
         // Execute color change on key release (transition from pressed to not pressed)
         if (prevKey0Pressed && !key0Pressed) {
-            srand(time(NULL));
+
             initializeBoard(board, playerBoard);
             currentPlayer = PLAYER1;
             gameEnd = false;
@@ -2455,17 +2455,16 @@ int main() {
 }
 
 void initializeBoard(unsigned short board[BOARD_SIZE][BOARD_SIZE], int playerBoard[BOARD_SIZE][BOARD_SIZE]) {
-    srand(time(NULL)); // Seed for random color generation, ideally called once in main
+
+	// Seed for random color generation, ideally called once in main
 
     // Calculate the starting x and y coordinates to center the board on the screen
     int startX = (SCREEN_WIDTH - (BOARD_SIZE * SQUARE_SIZE)) / 2;
     int startY = (SCREEN_HEIGHT - (BOARD_SIZE * SQUARE_SIZE)) / 2;
-
     for (int i = 0; i < BOARD_SIZE; i++) {
         for (int j = 0; j < BOARD_SIZE; j++) {
             // Assign a random color from the predefined RGB565 colors
 			bool colorOK;
-			
 			do {
         	// Initializes the colors on the board and ensures that no repeated
         	// colors are touching
