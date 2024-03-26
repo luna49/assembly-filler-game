@@ -20,7 +20,21 @@
 #define SEGMENT_OFFSET 8 // Offset for each hex digit within the 32-bit word
 #define LEDS_BASE_ADDRESS 0xFF200000 
 #define AUDIO_BASE_ADDRESS 0xFF203040
-#define PS2_BASE_ADDRESS 0xFF200100 // PS/2 port address
+#define LAST_PS2_DATA 0
+	
+volatile unsigned char last_ps2_data = 0;
+
+unsigned char read_ps2_data_register() {
+    volatile int *PS2_ptr = (int *)0xFF200100; // Adjust to your PS/2 port's address
+    int PS2_data = *PS2_ptr;
+    int RVALID = PS2_data & 0x8000; // Extract the RVALID field to check if data is ready
+    
+    if (RVALID) {
+        return (unsigned char)(PS2_data & 0xFF); // Return the data byte if valid
+    } else {
+        return 0; // No new data is ready
+    }
+}
 
 int samples[] = {
 0xfffbeb96, 0xffb2de9b, 0xffd2add6, 0x0030bc7c,
@@ -2308,6 +2322,8 @@ void printBoardVGA(unsigned short board[BOARD_SIZE][BOARD_SIZE]);
 void display_score(int score, volatile unsigned int* seg7_display, int player);
 int calculateScore(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player);
 void update_leds(volatile unsigned int* leds, int currentPlayer);
+void resetGame();
+bool read_spacebar();
 
 typedef struct {
     int x, y;
@@ -2368,6 +2384,14 @@ int main() {
 
         // Execute color change on key release (transition from pressed to not pressed)
         if (prevKey0Pressed && !key0Pressed) {
+			srand(time(NULL));
+    		initializeBoard(board, playerBoard);
+    		currentPlayer = PLAYER1;
+    		gameEnd = false;
+    		printBoardVGA(board);
+		}
+		
+		if (read_spacebar()) {
             int switchState = read_switches();
             unsigned short selectedColor = RGB565_COLORS[switchState];
 
@@ -2641,4 +2665,22 @@ void play_ding(volatile unsigned int* audio) {
     // Assuming a simple audio controller where writing a value initiates a sound
     *audio = 0x1; // Write a value to start playing the ding sound
     // You may need to add additional logic to handle the audio playback
+}
+
+bool read_spacebar() {
+    unsigned char data = read_ps2_data_register();
+    
+    if (data == 0x29) { // 0x29 is the make code for the spacebar
+        last_ps2_data = data; // Update the last read data
+        return true; // Spacebar was pressed
+    } else if (data == 0xF0) { // 0xF0 is the prefix for a break code
+        // If the break code prefix was read, the next byte will be the actual key's break code
+        // We need to read the next byte to check if it's the break code of the spacebar
+        last_ps2_data = data; // Update the last read data
+    } else if (last_ps2_data == 0xF0 && data == 0x29) { // Check if this is the break code following the prefix
+        // This condition is for releasing the spacebar, but you might want to handle it differently
+        last_ps2_data = 0; // Reset the last read data
+    }
+    
+    return false; // Spacebar was not pressed
 }
