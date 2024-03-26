@@ -2427,17 +2427,32 @@ void initializeBoard(unsigned short board[BOARD_SIZE][BOARD_SIZE], int playerBoa
     for (int i = 0; i < BOARD_SIZE; i++) {
         for (int j = 0; j < BOARD_SIZE; j++) {
             // Assign a random color from the predefined RGB565 colors
+			bool colorOK;
+			
+			do {
+        	// Initializes the colors on the board and ensures that no repeated
+        	// colors are touching
+        	colorOK = true;
             unsigned short color = RGB565_COLORS[rand() % COLOR_COUNT];
+				 
             board[i][j] = color;
             // Initialize playerBoard to track player positions, initially empty
-            playerBoard[i][j] = EMPTY;
-
-            // Calculate the top-left pixel coordinates for this square
+			if (i > 0 && board[i][j] == board[i - 1][j])
+          		colorOK = false;  // Check above
+        	if (j > 0 && board[i][j] == board[i][j - 1])
+          		colorOK = false;  // Check left
+			// Calculate the top-left pixel coordinates for this square
             int x = startX + j * SQUARE_SIZE;
             int y = startY + i * SQUARE_SIZE;
 
             // Draw the square on the VGA screen
             draw_square(x, y, color);
+				
+      		} while (!colorOK);
+			
+            playerBoard[i][j] = EMPTY;
+
+
         }
     }
 
