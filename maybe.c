@@ -2310,7 +2310,7 @@ const unsigned short RGB565_COLORS[COLOR_COUNT] = {
 void initializeBoard(unsigned short board[BOARD_SIZE][BOARD_SIZE], int playerBoard[BOARD_SIZE][BOARD_SIZE]);
 int checkAdjacent(unsigned short board[BOARD_SIZE][BOARD_SIZE], int row, int col, unsigned short color);
 void printBoard(unsigned short board[BOARD_SIZE][BOARD_SIZE]);
-void fill(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player, unsigned short color);
+void fill(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player, unsigned short color,  unsigned short oppplayercolor);
 void changePlayer(int *currentPlayer);
 int calculateScore(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player);
 int isGameOver(int playerBoard[BOARD_SIZE][BOARD_SIZE]);
@@ -2370,6 +2370,7 @@ int main() {
  	unsigned short board[BOARD_SIZE][BOARD_SIZE]; // Corrected type to unsigned short
     int playerBoard[BOARD_SIZE][BOARD_SIZE];
     int currentPlayer = PLAYER1;
+	int oppositePlayer = PLAYER2;
     int gameEnd = 0;
     int selectedColor;
 	bool spacebarPressed = false; 
@@ -2399,8 +2400,14 @@ int main() {
     // Your logic for handling color fill based on the current player
     int switchState = read_switches();
     unsigned short selectedColor = RGB565_COLORS[switchState];
-    
-    fill(playerBoard, board, currentPlayer, selectedColor);
+	
+    oppositePlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
+	int startX = (oppositePlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
+    int startY = (oppositePlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
+
+    unsigned short OppColor = board[startX][startY];
+			
+    fill(playerBoard, board, currentPlayer, selectedColor, OppColor);
     audio_playback_mono(samples, samples_n);
     printBoardVGA(board);
 
@@ -2513,12 +2520,13 @@ void printBoard(unsigned short board[BOARD_SIZE][BOARD_SIZE]) {
 }
 
 // Fill the player's territory with the selected RGB565 color.
-void fill(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player, unsigned short color) {
+void fill(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player, unsigned short color, unsigned short oppplayercolor ) {
     int startX = (player == PLAYER1) ? 0 : BOARD_SIZE - 1;
     int startY = (player == PLAYER1) ? 0 : BOARD_SIZE - 1;
 
     unsigned short targetColor = board[startX][startY];
     if (targetColor == color) return; // If the target color is the same as the selected color, do nothing.
+	if (color == oppplayercolor) return; //check if equal to other player's color, if it does, do nothing
 
     Point queue[BOARD_SIZE * BOARD_SIZE]; // Queue for BFS
     int front = 0, rear = 0;
