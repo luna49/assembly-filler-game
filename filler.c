@@ -20,6 +20,7 @@
 #define SEGMENT_OFFSET 8 // Offset for each hex digit within the 32-bit word
 #define LEDS_BASE_ADDRESS 0xFF200000 
 #define AUDIO_BASE_ADDRESS 0xFF203040
+#define PS2_BASE_ADDRESS 0xFF200100 // PS/2 port address
 
 int samples[] = {
 0xfffbeb96, 0xffb2de9b, 0xffd2add6, 0x0030bc7c,
