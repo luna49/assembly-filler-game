@@ -56,7 +56,6 @@ void clear_screen() {
     for (x_count = 0; x_count < RESOLUTION_X; ++x_count) {
         for (y_count = 0; y_count < RESOLUTION_Y; ++y_count) {
             plot_pixel(x_count, y_count, 0);
-            //65535  if you want all white
         }
     }
 }
@@ -2762,9 +2761,6 @@ int main() {
 }
 
 void initializeBoard(unsigned short board[BOARD_SIZE][BOARD_SIZE], int playerBoard[BOARD_SIZE][BOARD_SIZE]) {
-
-	// Seed for random color generation, ideally called once in main
-
     // Calculate the starting x and y coordinates to center the board on the screen
     int startX = (SCREEN_WIDTH - (BOARD_SIZE * SQUARE_SIZE)) / 2;
     int startY = (SCREEN_HEIGHT - (BOARD_SIZE * SQUARE_SIZE)) / 2;
