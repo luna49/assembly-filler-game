@@ -1,0 +1,14 @@
+#include <sys/time.h> // Include for gettimeofday()
+
+int main() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    long seed = tv.tv_sec * 1000000 + tv.tv_usec; // Seed with microseconds
+    printf("Seed value: %ld\n", seed);
+
+    srand(seed);
+
+// code here
+
+    return 0;
+}
