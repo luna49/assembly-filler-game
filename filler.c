@@ -2310,7 +2310,7 @@ const unsigned short RGB565_COLORS[COLOR_COUNT] = {
 void initializeBoard(unsigned short board[BOARD_SIZE][BOARD_SIZE], int playerBoard[BOARD_SIZE][BOARD_SIZE]);
 int checkAdjacent(unsigned short board[BOARD_SIZE][BOARD_SIZE], int row, int col, unsigned short color);
 void printBoard(unsigned short board[BOARD_SIZE][BOARD_SIZE]);
-void fill(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player, unsigned short color);
+void fill(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player, unsigned short color,  unsigned short oppplayercolor);
 void changePlayer(int *currentPlayer);
 int calculateScore(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player);
 int isGameOver(int playerBoard[BOARD_SIZE][BOARD_SIZE]);
@@ -2370,8 +2370,10 @@ int main() {
  	unsigned short board[BOARD_SIZE][BOARD_SIZE]; // Corrected type to unsigned short
     int playerBoard[BOARD_SIZE][BOARD_SIZE];
     int currentPlayer = PLAYER1;
+	int oppositePlayer = PLAYER2;
     int gameEnd = 0;
     int selectedColor;
+	bool spacebarPressed = false; 
 
     srand(time(NULL));
     initializeBoard(board, playerBoard);
@@ -2384,45 +2386,55 @@ int main() {
 
         // Execute color change on key release (transition from pressed to not pressed)
         if (prevKey0Pressed && !key0Pressed) {
-			srand(time(NULL));
-    		initializeBoard(board, playerBoard);
-    		currentPlayer = PLAYER1;
-    		gameEnd = false;
-    		printBoardVGA(board);
+            srand(time(NULL));
+            initializeBoard(board, playerBoard);
+            currentPlayer = PLAYER1;
+            gameEnd = false;
+            printBoardVGA(board);
+            spacebarPressed = false; // Reset spacebar state after game reset
 		}
 		
-		if (read_spacebar()) {
-            int switchState = read_switches();
-            unsigned short selectedColor = RGB565_COLORS[switchState];
+		if (read_spacebar() && !spacebarPressed) {
+    spacebarPressed = true; // Prevent multiple fills on a single press
 
-            // Ensure only the current player's corner color changes
-            fill(playerBoard, board, currentPlayer, selectedColor);
-			
-			audio_playback_mono(samples, samples_n);
+    // Your logic for handling color fill based on the current player
+    int switchState = read_switches();
+    unsigned short selectedColor = RGB565_COLORS[switchState];
+	
+    oppositePlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
+	int startX = (oppositePlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
+    int startY = (oppositePlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
 
+    unsigned short OppColor = board[startX][startY];
 			
-            printBoardVGA(board); // Update the VGA display with the new board state
-			
- 			int scorePlayer1 = calculateScore(playerBoard, board, PLAYER1);
-            int scorePlayer2 = calculateScore(playerBoard, board, PLAYER2);
-			
-			printf("Player 1's score: %d\n", scorePlayer1);
-			printf("Player 2's score: %d\n", scorePlayer2);
-				   
-   		 	// Display scores on 7-segment displays
-    		// Assuming 'display_score' can target individual segments, and we have a mechanism to specify which
-			display_score(scorePlayer1, (volatile unsigned int*)SEG7_DISPLAY, PLAYER1);
-            display_score(scorePlayer2, (volatile unsigned int*)SEG7_DISPLAY, PLAYER2);
-			
-			update_leds((volatile unsigned int*)LEDS_BASE_ADDRESS, currentPlayer);
-			
-			gameEnd = isGameOver(playerBoard);
-            if (!gameEnd) {
-                changePlayer(&currentPlayer); // Switch players if the game continues
-            }
-        }
+    fill(playerBoard, board, currentPlayer, selectedColor, OppColor);
+    audio_playback_mono(samples, samples_n);
+    printBoardVGA(board);
 
-        prevKey0Pressed = key0Pressed; // Update the previous key state for the next iteration
+    // Update scores and display
+    int scorePlayer1 = calculateScore(playerBoard, board, PLAYER1);
+    int scorePlayer2 = calculateScore(playerBoard, board, PLAYER2);
+    printf("Player 1's score: %d\n", scorePlayer1);
+    printf("Player 2's score: %d\n", scorePlayer2);
+
+    display_score(scorePlayer1, (volatile unsigned int*)SEG7_DISPLAY, PLAYER1);
+    display_score(scorePlayer2, (volatile unsigned int*)SEG7_DISPLAY, PLAYER2);
+
+    update_leds((volatile unsigned int*)LEDS_BASE_ADDRESS, currentPlayer);
+
+    // Check if the game has ended
+    gameEnd = isGameOver(playerBoard);
+
+    // Correctly toggle currentPlayer only once after all actions are done
+    if (!gameEnd) {
+        currentPlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
+    }
+
+} else if (!read_spacebar()) {
+    spacebarPressed = false; // Ensure we can detect the next press
+}	
+			prevKey0Pressed = key0Pressed;
+        
 
         // Optional: Implement a delay here to manage game pace and debounce handling
     }
@@ -2508,12 +2520,13 @@ void printBoard(unsigned short board[BOARD_SIZE][BOARD_SIZE]) {
 }
 
 // Fill the player's territory with the selected RGB565 color.
-void fill(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player, unsigned short color) {
+void fill(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player, unsigned short color, unsigned short oppplayercolor ) {
     int startX = (player == PLAYER1) ? 0 : BOARD_SIZE - 1;
     int startY = (player == PLAYER1) ? 0 : BOARD_SIZE - 1;
 
     unsigned short targetColor = board[startX][startY];
     if (targetColor == color) return; // If the target color is the same as the selected color, do nothing.
+	if (color == oppplayercolor) return; //check if equal to other player's color, if it does, do nothing
 
     Point queue[BOARD_SIZE * BOARD_SIZE]; // Queue for BFS
     int front = 0, rear = 0;
@@ -2538,7 +2551,6 @@ void fill(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SI
         }
     }
 }
-
 
 
 // Change the current player.
@@ -2681,6 +2693,5 @@ bool read_spacebar() {
         // This condition is for releasing the spacebar, but you might want to handle it differently
         last_ps2_data = 0; // Reset the last read data
     }
-    
     return false; // Spacebar was not pressed
 }
