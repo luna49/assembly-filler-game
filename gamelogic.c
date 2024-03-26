@@ -7,6 +7,21 @@
 
 #define BOARD_SIZE 8
 #define NUM_COLORS 6
+#define PS2_ADDRESS 0xFF200100
+
+// int read_keyBoard() {
+// 	int PS2_data, RVALID;
+
+// 	volatile int* PS2_ptr = (int*) PS2_BASE_ADDRESS;
+// 	PS2_data = *(PS2_ptr);	// read the Data register in the PS/2 port
+// 	RVALID = (PS2_data & 0x8000);	// extract the RVALID field
+
+// 	if(RVALID != 0 && (PS2_data & 0xFF) == 0x29){
+// 		//spacebar is pressed
+// 		return 1;
+// 	}
+// 	return 0;
+// }
 
 void initializeBoard();
 void displayBoard();
