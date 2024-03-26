@@ -2665,7 +2665,6 @@ int read_key0() {
     }
 }
 
-
 int main() {
  	unsigned short board[BOARD_SIZE][BOARD_SIZE]; // Corrected type to unsigned short
     int playerBoard[BOARD_SIZE][BOARD_SIZE];
@@ -2702,6 +2701,13 @@ int main() {
             gameEnd = false;
             printBoardVGA(board);
             spacebarPressed = false; // Reset spacebar state after game reset
+			int scorePlayer1 = 1;
+    		int scorePlayer2 = 1;
+			update_leds((volatile unsigned int*)LEDS_BASE_ADDRESS, currentPlayer);
+			display_score(scorePlayer1, (volatile unsigned int*)SEG7_DISPLAY, PLAYER1);
+    		display_score(scorePlayer2, (volatile unsigned int*)SEG7_DISPLAY, PLAYER2);
+
+			
 		}
 		
 		if (read_spacebar() && !spacebarPressed) {
@@ -2749,17 +2755,17 @@ int main() {
         // Optional: Implement a delay here to manage game pace and debounce handling
     }
 
-
+	int scorePlayer1 = calculateScore(playerBoard, board, PLAYER1);
+    int scorePlayer2 = calculateScore(playerBoard, board, PLAYER2);
     // Determine winner
-    // int player1Score = countScore(playerBoard, PLAYER1);
-    // int player2Score = countScore(playerBoard, PLAYER2);
-    //if (player1Score > player2Score) {
-        //printf("Player 1 wins!\n");
-    //} else if (player2Score > player1Score) {
-        //printf("Player 2 wins!\n");
-    //} else {
-        //printf("It's a tie!\n");
-    //}
+
+    if (scorePlayer1 > scorePlayer2) {
+        printf("Player 1 wins!\n");
+    } else if (scorePlayer2 > scorePlayer1) {
+        printf("Player 2 wins!\n");
+    } else {
+        printf("It's a tie!\n");
+    }
 
     return 0;
 }
