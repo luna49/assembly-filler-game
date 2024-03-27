@@ -9,7 +9,7 @@
 #define EMPTY 0xFFFF // Assuming white (or any distinct color) represents an empty block in RGB565
 #define PLAYER1 1
 #define PLAYER2 2
-#define SQUARE_SIZE 30 // Size of each square in pixels
+#define SQUARE_SIZE 20 // Size of each square in pixels
 #define VGA_PIXEL_BUFFER_BASE_ADDRESS 0x08000000
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 240
@@ -22,7 +22,9 @@
 #define LEDS_BASE_ADDRESS 0xFF200000 
 #define AUDIO_BASE_ADDRESS 0xFF203040
 #define LAST_PS2_DATA 0
-#define PS2_ptr1 ((volatile int *) 0xFF200100)  // PS/2 port address
+#define PS2_ptr1 ((volatile int *) 0xFF200108)  // PS/2 port address
+#define START_X 80 // Example: starting x coordinate, adjust as needed
+#define START_Y 10 // Example: starting y coordinate, move higher as needed
 
 
 int pixel_buffer_start; // global variable
@@ -2771,45 +2773,24 @@ int main() {
 }
 
 void initializeBoard(unsigned short board[BOARD_SIZE][BOARD_SIZE], int playerBoard[BOARD_SIZE][BOARD_SIZE]) {
-
-	// Seed for random color generation, ideally called once in main
-
-    // Calculate the starting x and y coordinates to center the board on the screen
-    int startX = (SCREEN_WIDTH - (BOARD_SIZE * SQUARE_SIZE)) / 2;
-    int startY = (SCREEN_HEIGHT - (BOARD_SIZE * SQUARE_SIZE)) / 2;
     for (int i = 0; i < BOARD_SIZE; i++) {
         for (int j = 0; j < BOARD_SIZE; j++) {
-            // Assign a random color from the predefined RGB565 colors
-			bool colorOK;
-			do {
-        	// Initializes the colors on the board and ensures that no repeated
-        	// colors are touching
-        	colorOK = true;
-            unsigned short color = RGB565_COLORS[rand() % COLOR_COUNT];
-				 
-            board[i][j] = color;
-            // Initialize playerBoard to track player positions, initially empty
-			if (i > 0 && board[i][j] == board[i - 1][j])
-          		colorOK = false;  // Check above
-        	if (j > 0 && board[i][j] == board[i][j - 1])
-          		colorOK = false;  // Check left
-			// Calculate the top-left pixel coordinates for this square
-            int x = startX + j * SQUARE_SIZE;
-            int y = startY + i * SQUARE_SIZE;
-
-            // Draw the square on the VGA screen
-            draw_square(x, y, color);
-				
-      		} while (!colorOK);
-			
+            bool colorOK;
+            do {
+                colorOK = true;
+                unsigned short color = RGB565_COLORS[rand() % COLOR_COUNT];
+                board[i][j] = color;
+                if (i > 0 && board[i][j] == board[i - 1][j])
+                    colorOK = false;
+                if (j > 0 && board[i][j] == board[i][j - 1])
+                    colorOK = false;
+                int x = START_X + j * SQUARE_SIZE;
+                int y = START_Y + i * SQUARE_SIZE;
+                draw_square(x, y, color);
+            } while (!colorOK);
             playerBoard[i][j] = EMPTY;
-
-
         }
     }
-
-    // Optional: Display initial positions or markers for players if applicable
-    // This part would involve directly plotting special markers or using a different drawing function
 }
 
 // Check if adjacent cells have the same color in RGB565 format.
@@ -2900,17 +2881,10 @@ void draw_square(int x, int y, short int color) {
 }
 
 void printBoardVGA(unsigned short board[BOARD_SIZE][BOARD_SIZE]) {
-    // Calculate the starting x and y coordinates to center the board on the screen
-    int startX = (SCREEN_WIDTH - (BOARD_SIZE * SQUARE_SIZE)) / 2;
-    int startY = (SCREEN_HEIGHT - (BOARD_SIZE * SQUARE_SIZE)) / 2;
-
     for (int i = 0; i < BOARD_SIZE; i++) {
         for (int j = 0; j < BOARD_SIZE; j++) {
-            // Calculate the top-left pixel coordinates for this square
-            int x = startX + j * SQUARE_SIZE;
-            int y = startY + i * SQUARE_SIZE;
-
-            // Draw the square on the VGA screen with the current color
+            int x = START_X + j * SQUARE_SIZE;
+            int y = START_Y + i * SQUARE_SIZE;
             draw_square(x, y, board[i][j]);
         }
     }
