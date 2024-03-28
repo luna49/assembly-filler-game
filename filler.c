@@ -22,7 +22,7 @@
 #define LEDS_BASE_ADDRESS 0xFF200000 
 #define AUDIO_BASE_ADDRESS 0xFF203040
 #define LAST_PS2_DATA 0
-#define PS2_ptr1 ((volatile int *) 0xFF200108)  // PS/2 port address
+#define PS2_ptr1 ((volatile int *) 0xFF200100)  // PS/2 port address
 #define START_X 80 // Example: starting x coordinate, adjust as needed
 #define START_Y 10 // Example: starting y coordinate, move higher as needed
 
@@ -45,39 +45,6 @@ const int RESOLUTION_X= 320;
 #define ABS(x) (((x) > 0) ? (x) : -(x))
 #define FALSE 0
 #define TRUE 1
-	
-	
-void plot_pixels(int x, int y, short int line_color)
-{
-    *(volatile short int *)(pixel_buffer_start + (y << 10) + (x << 1)) = line_color; 
-}
-
-void clear_screen() {
-    int x_count = 0;
-    int y_count = 0;
-
-    for (x_count = 0; x_count < RESOLUTION_X; ++x_count) {
-        for (y_count = 0; y_count < RESOLUTION_Y; ++y_count) {
-            plot_pixels(x_count, y_count, 0);
-            //65535  if you want all white
-        }
-    }
-}
-
-
-void displayImage(int startingX,int startingY,  int imageHeight,int imageWidth, int imagePointer[imageHeight][imageWidth]){
-	//first number is how far left it is from the screen
-	//second number is how far down it is from the screen
-	//third number is the height
-	//fourth number is the width
-	int horizontal, verticle;
-	for(verticle=0; verticle<imageHeight; verticle++){
-		for(horizontal=0; horizontal<imageWidth; horizontal++){
-			plot_pixels(horizontal+startingX, verticle+startingY, imagePointer[verticle][horizontal]);
-		}
-	}	
-}
-
 
 	int Image [240][320] = {
 	{65535,65503,65535,65535,65503,65535,65535,65535,63486,63486,65535,65535,65535,65535,63390,57084,52857,48599,44437,42357,42356,42356,44405,44373,44373,44373,44373,44405,44405,44405,46421,46422,46454,46454,44405,44405,44437,44437,44437,46486,46486,46486,46486,46486,46486,46486,46486,46486,46486,46486,46486,46486,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46518,46486,46486,46486,46486,46486,46486,46486,46486,46486,46486,46486,46486,46486,46486,46486,44405,44405,44405,44405,44405,44405,44405,44373,44373,44373,44373,44373,44373,44373,44373,44405,48599,52825,57083,61341,65503,65535,65535,65535,65535,65535,65535,65535,65535,65535,65535,65535,65535,65535,65535,65535,65535,65535},
@@ -323,20 +290,6 @@ void displayImage(int startingX,int startingY,  int imageHeight,int imageWidth, 
 
 };
 	
-volatile unsigned char last_ps2_data = 0;
-
-unsigned char read_ps2_data_register() {
-    volatile int *PS2_ptr = (int *)0xFF200100; // Adjust to your PS/2 port's address
-    int PS2_data = *PS2_ptr;
-    int RVALID = PS2_data & 0x8000; // Extract the RVALID field to check if data is ready
-    
-    if (RVALID) {
-        return (unsigned char)(PS2_data & 0xFF); // Return the data byte if valid
-    } else {
-        return 0; // No new data is ready
-    }
-}
-
 int samples[] = {
 0xfffbeb96, 0xffb2de9b, 0xffd2add6, 0x0030bc7c,
 0x002dab2e, 0x0063c21d, 0x004a0e3e, 0xfff5ede4,
@@ -2573,6 +2526,38 @@ int samples[] = {
 0x00034219, 0x0003dfc1, 0x0001c70a, 0x0001f86d,
 0x000357af, 0x00058b34, 0x0002bc1c};
 
+void plot_pixels(int x, int y, short int line_color)
+{
+    *(volatile short int *)(pixel_buffer_start + (y << 10) + (x << 1)) = line_color; 
+}
+
+void clear_screen() {
+    int x_count = 0;
+    int y_count = 0;
+
+    for (x_count = 0; x_count < RESOLUTION_X; ++x_count) {
+        for (y_count = 0; y_count < RESOLUTION_Y; ++y_count) {
+            plot_pixels(x_count, y_count, 0);
+            //65535  if you want all white
+        }
+    }
+}
+
+
+void displayImage(int startingX,int startingY,  int imageHeight,int imageWidth, int imagePointer[imageHeight][imageWidth]){
+	//first number is how far left it is from the screen
+	//second number is how far down it is from the screen
+	//third number is the height
+	//fourth number is the width
+	int horizontal, verticle;
+	for(verticle=0; verticle<imageHeight; verticle++){
+		for(horizontal=0; horizontal<imageWidth; horizontal++){
+			plot_pixels(horizontal+startingX, verticle+startingY, imagePointer[verticle][horizontal]);
+		}
+	}	
+}
+
+
 int samples_n = 8932;
 
 struct audio_t {
@@ -2631,7 +2616,6 @@ typedef struct {
     int x, y;
 } Point;
 
-
 void enqueue(Point queue[], int *rear, Point item) {
     queue[(*rear)++] = item; // Add item to the queue
 }
@@ -2667,6 +2651,20 @@ int read_key0() {
     }
 }
 
+volatile unsigned char last_ps2_data = 0;
+
+unsigned char read_ps2_data_register() {
+    volatile int *PS2_ptr = (int *)0xFF200100; // Adjust to your PS/2 port's address
+    int PS2_data = *PS2_ptr;
+    int RVALID = PS2_data & 0x8000; // Extract the RVALID field to check if data is ready
+    
+    if (RVALID) {
+        return (unsigned char)(PS2_data & 0xFF); // Return the data byte if valid
+    } else {
+        return 0; // No new data is ready
+    }
+}
+
 int main() {
  	unsigned short board[BOARD_SIZE][BOARD_SIZE]; // Corrected type to unsigned short
     int playerBoard[BOARD_SIZE][BOARD_SIZE];
@@ -2695,9 +2693,9 @@ int main() {
 
     while (!gameEnd) {
         bool key0Pressed = read_key0(); // Check the current state of key 0
-        // Execute color change on key release (transition from pressed to not pressed)
-        if (prevKey0Pressed && !key0Pressed) {
 
+        // Execute reset on key release (transition from pressed to not pressed)
+        if (prevKey0Pressed && !key0Pressed) {
             initializeBoard(board, playerBoard);
             currentPlayer = PLAYER1;
             gameEnd = false;
@@ -2708,45 +2706,42 @@ int main() {
 			update_leds((volatile unsigned int*)LEDS_BASE_ADDRESS, currentPlayer);
 			display_score(scorePlayer1, (volatile unsigned int*)SEG7_DISPLAY, PLAYER1);
     		display_score(scorePlayer2, (volatile unsigned int*)SEG7_DISPLAY, PLAYER2);
-
-			
 		}
 		
 		if (read_spacebar() && !spacebarPressed) {
-    spacebarPressed = true; // Prevent multiple fills on a single press
+    		spacebarPressed = true; // Prevent multiple fills on a single press
 
-    // Your logic for handling color fill based on the current player
-    int switchState = read_switches();
-    unsigned short selectedColor = RGB565_COLORS[switchState];
+    		int switchState = read_switches(); //read switch to determine the colour
+    		unsigned short selectedColor = RGB565_COLORS[switchState]; 
 	
-    oppositePlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
-	int startX = (oppositePlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
-    int startY = (oppositePlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
+    		oppositePlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1; //swap players
+			int startX = (oppositePlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
+			int startY = (oppositePlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
 
-    unsigned short OppColor = board[startX][startY];
-			
-    fill(playerBoard, board, currentPlayer, selectedColor, OppColor);
-    audio_playback_mono(samples, samples_n);
-    printBoardVGA(board);
+			unsigned short OppColor = board[startX][startY];
+					
+			fill(playerBoard, board, currentPlayer, selectedColor, OppColor);
+			audio_playback_mono(samples, samples_n);
+			printBoardVGA(board);
 
-    // Update scores and display
-    int scorePlayer1 = calculateScore(playerBoard, board, PLAYER1);
-    int scorePlayer2 = calculateScore(playerBoard, board, PLAYER2);
-    printf("Player 1's score: %d\n", scorePlayer1);
-    printf("Player 2's score: %d\n", scorePlayer2);
+			// Update scores and display
+			int scorePlayer1 = calculateScore(playerBoard, board, PLAYER1);
+			int scorePlayer2 = calculateScore(playerBoard, board, PLAYER2);
+			printf("Player 1's score: %d\n", scorePlayer1);
+			printf("Player 2's score: %d\n", scorePlayer2);
 
-    display_score(scorePlayer1, (volatile unsigned int*)SEG7_DISPLAY, PLAYER1);
-    display_score(scorePlayer2, (volatile unsigned int*)SEG7_DISPLAY, PLAYER2);
+			display_score(scorePlayer1, (volatile unsigned int*)SEG7_DISPLAY, PLAYER1);
+			display_score(scorePlayer2, (volatile unsigned int*)SEG7_DISPLAY, PLAYER2);
 
-    update_leds((volatile unsigned int*)LEDS_BASE_ADDRESS, currentPlayer);
+			update_leds((volatile unsigned int*)LEDS_BASE_ADDRESS, currentPlayer);
 
-    // Check if the game has ended
-    gameEnd = isGameOver(playerBoard);
+			// Check if the game has ended
+			gameEnd = isGameOver(playerBoard);
 
-    // Correctly toggle currentPlayer only once after all actions are done
-    if (!gameEnd) {
-        currentPlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
-    }
+			// Correctly toggle currentPlayer only once after all actions are done
+			if (!gameEnd) {
+				currentPlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
+			}
 
 } else if (!read_spacebar()) {
     spacebarPressed = false; // Ensure we can detect the next press
@@ -2889,6 +2884,47 @@ void printBoardVGA(unsigned short board[BOARD_SIZE][BOARD_SIZE]) {
         }
     }
 }
+
+void printboardoutline(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short board[BOARD_SIZE][BOARD_SIZE], int player, unsigned short color, unsigned short oppplayercolor ) {
+    int startX = (player == PLAYER1) ? 0 : BOARD_SIZE - 1;
+    int startY = (player == PLAYER1) ? 0 : BOARD_SIZE - 1;
+
+    unsigned short targetColor = board[startX][startY];
+    if (targetColor == color) return; // If the target color is the same as the selected color, do nothing.
+	if (color == oppplayercolor) return; //check if equal to other player's color, if it does, do nothing
+
+    Point queue[BOARD_SIZE * BOARD_SIZE]; // Queue for BFS
+    int front = 0, rear = 0;
+
+    enqueue(queue, &rear, (Point){startX, startY});
+    board[startX][startY] = color; // Change the corner color immediately
+
+    while (front < rear) {
+        Point p = dequeue(queue, &front);
+
+        // Check all 4 adjacent squares
+        Point directions[4] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        for (int i = 0; i < 4; i++) {
+            int newX = p.x + directions[i].x;
+            int newY = p.y + directions[i].y;
+
+            if (isValid(newX, newY, board, targetColor)) {
+                board[newX][newY] = color; // Change the color
+                playerBoard[newX][newY] = player; // Assign the square to the player
+                enqueue(queue, &rear, (Point){newX, newY});
+            }
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
 
 
 void vsync()
