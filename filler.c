@@ -2721,7 +2721,12 @@ int main() {
 			unsigned short OppColor = board[startX][startY];
 					
 			fill(playerBoard, board, currentPlayer, selectedColor, OppColor);
-			outlinePlayerTerritory(board, playerBoard, currentPlayer);
+			highlightPlayerArea(board, playerBoard, currentPlayer);
+
+			for (int i = 0; i<100000; i++){
+				int a = a+1;
+			};
+
 			audio_playback_mono(samples, samples_n);
 			printBoardVGA(board);
 
@@ -3087,4 +3092,3 @@ void highlightPlayerArea(unsigned short board[BOARD_SIZE][BOARD_SIZE], int playe
         }
     }
 }
-
