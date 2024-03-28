@@ -2557,6 +2557,15 @@ void displayImage(int startingX,int startingY,  int imageHeight,int imageWidth, 
 	}	
 }
 
+void printPlayerBoard(int playerBoard[BOARD_SIZE][BOARD_SIZE]) {
+    for (int y = 0; y < BOARD_SIZE; y++) {
+        for (int x = 0; x < BOARD_SIZE; x++) {
+            printf("%d ", playerBoard[y][x]);
+        }
+        printf("\n");
+    }
+    printf("\n"); // Extra newline for better separation between prints
+}
 
 int samples_n = 8932;
 
@@ -2611,7 +2620,9 @@ void update_leds(volatile unsigned int* leds, int currentPlayer);
 void resetGame();
 bool read_spacebar();
 void waitForMouseClick();
-void highlightPlayerArea(unsigned short board[BOARD_SIZE][BOARD_SIZE], int playerBoard[BOARD_SIZE][BOARD_SIZE], int player);
+void highlightEdges(unsigned short board[BOARD_SIZE][BOARD_SIZE], unsigned short playerColor);
+bool isEdge(unsigned short board[BOARD_SIZE][BOARD_SIZE], int x, int y, unsigned short playerColor); 
+
 typedef struct {
     int x, y;
 } Point;
@@ -2721,7 +2732,7 @@ int main() {
 			unsigned short OppColor = board[startX][startY];
 					
 			fill(playerBoard, board, currentPlayer, selectedColor, OppColor);
-			highlightPlayerArea(board, playerBoard, currentPlayer);
+			highlightEdges(board, selectedColor);
 
 			for (int i = 0; i<100000; i++){
 				int a = a+1;
@@ -3057,38 +3068,50 @@ void waitForMouseClick() {
     }
 }
 
-void highlightPlayerArea(unsigned short board[BOARD_SIZE][BOARD_SIZE], int playerBoard[BOARD_SIZE][BOARD_SIZE], int player) {
-    // Temporary storage to mark edges for outlining
-    bool outline[BOARD_SIZE][BOARD_SIZE] = {0};
+void highlightEdges(unsigned short board[BOARD_SIZE][BOARD_SIZE], unsigned short playerColor) {
+    // Temporary variable to hold whether a pixel has been highlighted
+    bool highlighted[BOARD_SIZE][BOARD_SIZE] = {false};
 
-    // Detect boundaries
+    // Iterate over the board to find the player's color
     for (int y = 0; y < BOARD_SIZE; y++) {
         for (int x = 0; x < BOARD_SIZE; x++) {
-            // Check if current block belongs to the player
-            if (playerBoard[y][x] == player) {
-                // Check adjacent cells
-                for (int dy = -1; dy <= 1; dy++) {
-                    for (int dx = -1; dx <= 1; dx++) {
-                        if (dx == 0 && dy == 0) continue; // Skip the current cell
-                        int newX = x + dx;
-                        int newY = y + dy;
-                        // Mark edge if adjacent cell is out of bounds or not the player's color
-                        if (newX < 0 || newX >= BOARD_SIZE || newY < 0 || newY >= BOARD_SIZE || playerBoard[newY][newX] != player) {
-                            outline[y][x] = true;
-                        }
-                    }
+            if (board[y][x] == playerColor) {
+                // Check adjacent cells to determine if this cell is on the edge of the player's territory
+                if (isEdge(board, x, y, playerColor)) {
+                    // Apply highlighting around this cell
+                    // In a real implementation, you would draw a border or change the cell's appearance
+                    // For this example, we'll mark it as highlighted for visualization
+                    highlighted[y][x] = true;
                 }
             }
         }
     }
 
-    // Outline the marked edges
-    for (int y = 0; y < BOARD_SIZE; y++) {
-        for (int x = 0; x < BOARD_SIZE; x++) {
-            if (outline[y][x]) {
-                // Change the color of the edge to white (or any contrasting color)
-                plot_pixel(x, y, 0xFFFF); // Assuming plot_pixel function exists and 0xFFFF is white
+    // Optionally: Update the board or a display method to show the highlighted edges
+    // This step depends on how you want to display the highlighting (e.g., updating the board or drawing on a GUI)
+}
+
+bool isEdge(unsigned short board[BOARD_SIZE][BOARD_SIZE], int x, int y, unsigned short playerColor) {
+    // Define the directions to check for adjacent cells
+    int dirs[4][2] = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
+
+    // Check each direction
+    for (int i = 0; i < 4; i++) {
+        int nx = x + dirs[i][0];
+        int ny = y + dirs[i][1];
+
+        // Check bounds
+        if (nx >= 0 && nx < BOARD_SIZE && ny >= 0 && ny < BOARD_SIZE) {
+            // If an adjacent cell is not of the player's color, this cell is on the edge
+            if (board[ny][nx] != playerColor) {
+                return true;
             }
+        } else {
+            // Cell is on the edge of the board
+            return true;
         }
     }
+
+    // If all adjacent cells are of the player's color, this cell is not on the edge
+    return false;
 }
