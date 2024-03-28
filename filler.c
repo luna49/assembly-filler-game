@@ -2611,6 +2611,7 @@ void update_leds(volatile unsigned int* leds, int currentPlayer);
 void resetGame();
 bool read_spacebar();
 void waitForMouseClick();
+void highlightPlayerArea(unsigned short board[BOARD_SIZE][BOARD_SIZE], int player, unsigned short color);
 
 typedef struct {
     int x, y;
@@ -2721,6 +2722,7 @@ int main() {
 			unsigned short OppColor = board[startX][startY];
 					
 			fill(playerBoard, board, currentPlayer, selectedColor, OppColor);
+			highlightPlayerArea(board, currentPlayer, selectedColor);
 			audio_playback_mono(samples, samples_n);
 			printBoardVGA(board);
 
@@ -3046,6 +3048,29 @@ void waitForMouseClick() {
             // and other status information
             if (byte1 & 0x01) {
                 mouseClicked = true;
+            }
+        }
+    }
+}
+
+void highlightPlayerArea(unsigned short board[BOARD_SIZE][BOARD_SIZE], int player, unsigned short color) {
+    const unsigned short outlineColor = 0xFFFF; // White color for the outline
+    for (int x = 0; x < BOARD_SIZE; ++x) {
+        for (int y = 0; y < BOARD_SIZE; ++y) {
+            if (board[x][y] == color) {
+                // Check if the current block is at the edge of the player's area
+                if (x > 0 && board[x-1][y] != color) {
+                    plot_pixel(START_X + x * SQUARE_SIZE, START_Y + y * SQUARE_SIZE, outlineColor);
+                }
+                if (x < BOARD_SIZE - 1 && board[x+1][y] != color) {
+                    plot_pixel(START_X + (x + 1) * SQUARE_SIZE - 1, START_Y + y * SQUARE_SIZE, outlineColor);
+                }
+                if (y > 0 && board[x][y-1] != color) {
+                    plot_pixel(START_X + x * SQUARE_SIZE, START_Y + y * SQUARE_SIZE, outlineColor);
+                }
+                if (y < BOARD_SIZE - 1 && board[x][y+1] != color) {
+                    plot_pixel(START_X + x * SQUARE_SIZE, START_Y + (y + 1) * SQUARE_SIZE - 1, outlineColor);
+                }
             }
         }
     }
