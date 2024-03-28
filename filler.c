@@ -2611,8 +2611,7 @@ void update_leds(volatile unsigned int* leds, int currentPlayer);
 void resetGame();
 bool read_spacebar();
 void waitForMouseClick();
-void highlightPlayerArea(unsigned short board[BOARD_SIZE][BOARD_SIZE], int player, unsigned short color);
-
+void highlightPlayerArea(unsigned short board[BOARD_SIZE][BOARD_SIZE], int playerBoard[BOARD_SIZE][BOARD_SIZE], int player);
 typedef struct {
     int x, y;
 } Point;
@@ -2722,7 +2721,7 @@ int main() {
 			unsigned short OppColor = board[startX][startY];
 					
 			fill(playerBoard, board, currentPlayer, selectedColor, OppColor);
-			highlightPlayerArea(board, currentPlayer, selectedColor);
+			outlinePlayerTerritory(board, playerBoard, currentPlayer);
 			audio_playback_mono(samples, samples_n);
 			printBoardVGA(board);
 
@@ -3053,25 +3052,39 @@ void waitForMouseClick() {
     }
 }
 
-void highlightPlayerArea(unsigned short board[BOARD_SIZE][BOARD_SIZE], int player, unsigned short color) {
-    const unsigned short outlineColor = 0xFFFF; // White color for the outline
-    for (int x = 0; x < BOARD_SIZE; ++x) {
-        for (int y = 0; y < BOARD_SIZE; ++y) {
-            if (board[x][y] == color) {
-                // Check if the current block is at the edge of the player's area
-                if (x > 0 && board[x-1][y] != color) {
-                    plot_pixel(START_X + x * SQUARE_SIZE, START_Y + y * SQUARE_SIZE, outlineColor);
-                }
-                if (x < BOARD_SIZE - 1 && board[x+1][y] != color) {
-                    plot_pixel(START_X + (x + 1) * SQUARE_SIZE - 1, START_Y + y * SQUARE_SIZE, outlineColor);
-                }
-                if (y > 0 && board[x][y-1] != color) {
-                    plot_pixel(START_X + x * SQUARE_SIZE, START_Y + y * SQUARE_SIZE, outlineColor);
-                }
-                if (y < BOARD_SIZE - 1 && board[x][y+1] != color) {
-                    plot_pixel(START_X + x * SQUARE_SIZE, START_Y + (y + 1) * SQUARE_SIZE - 1, outlineColor);
+void highlightPlayerArea(unsigned short board[BOARD_SIZE][BOARD_SIZE], int playerBoard[BOARD_SIZE][BOARD_SIZE], int player) {
+    // Temporary storage to mark edges for outlining
+    bool outline[BOARD_SIZE][BOARD_SIZE] = {0};
+
+    // Detect boundaries
+    for (int y = 0; y < BOARD_SIZE; y++) {
+        for (int x = 0; x < BOARD_SIZE; x++) {
+            // Check if current block belongs to the player
+            if (playerBoard[y][x] == player) {
+                // Check adjacent cells
+                for (int dy = -1; dy <= 1; dy++) {
+                    for (int dx = -1; dx <= 1; dx++) {
+                        if (dx == 0 && dy == 0) continue; // Skip the current cell
+                        int newX = x + dx;
+                        int newY = y + dy;
+                        // Mark edge if adjacent cell is out of bounds or not the player's color
+                        if (newX < 0 || newX >= BOARD_SIZE || newY < 0 || newY >= BOARD_SIZE || playerBoard[newY][newX] != player) {
+                            outline[y][x] = true;
+                        }
+                    }
                 }
             }
         }
     }
+
+    // Outline the marked edges
+    for (int y = 0; y < BOARD_SIZE; y++) {
+        for (int x = 0; x < BOARD_SIZE; x++) {
+            if (outline[y][x]) {
+                // Change the color of the edge to white (or any contrasting color)
+                plot_pixel(x, y, 0xFFFF); // Assuming plot_pixel function exists and 0xFFFF is white
+            }
+        }
+    }
 }
+
