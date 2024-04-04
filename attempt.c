@@ -37,7 +37,7 @@
 #define FALSE 0
 #define TRUE 1
 #define TURN_TIME_LIMIT 10 // 10 seconds time limit for each player's turn
-#define CLOCKS_PER_SECOND 500000
+#define CLOCKS_PER_SECOND 50000
 
 	
 /* COLORS */
@@ -114,11 +114,7 @@ void highlightEdges(unsigned short (*)[BOARD_SIZE], unsigned short);
 bool isEdge(unsigned short (*)[BOARD_SIZE], int, int, unsigned short);
 bool read_timer(); 
 
-void update_timer_display(volatile unsigned int* seg7_display, int remainingTime) {
-    // This function assumes that the display_score function is adapted to show time
-    // You might need to adapt it to fit your seven-segment display configuration
-    display_score(remainingTime, seg7_display, currentPlayer);
-}
+void update_timer_display(volatile unsigned int* seg7_display, int remainingTime, int currentPlayer);
 
 
 
@@ -196,7 +192,7 @@ int main() {
     clear_screen();
     displayImage(0, 0, 240, 320, Image);
 
-    // wait for a mouse click before proceeding
+    // wait for a mouse click (space) before proceeding
     waitForMouseClick();
 	
 	clear_screen();
@@ -220,23 +216,26 @@ int main() {
 			int scorePlayer1 = 1;
     		int scorePlayer2 = 1;
 			update_leds((volatile unsigned int*)LEDS_BASE_ADDRESS, currentPlayer);
-			display_score(scorePlayer1, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER1);
-    		display_score(scorePlayer2, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER2);
+			//display_score(scorePlayer1, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER1);
+    		//display_score(scorePlayer2, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER2);
+			int remainingTime = 10;
+			update_timer_display((volatile unsigned int*)SEG7_DISPLAY_ADDRESS, remainingTime, currentPlayer);
 		}
 		
         if (read_timer()) {
         remainingTime--;
-            if (remainingTime <= 0) {
+            if (remainingTime < 0 || (read_spacebar() && !spacebarPressed)) {
                 // Time's up, switch to the next player
                 currentPlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
                 oppositePlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
-                remainingTime = TURN_TIME_LIMIT; // Reset the timer for the next player
+                remainingTime = 10; // Reset the timer for the next player
                 // Update the display for the new player and reset time
-                update_timer_display((volatile unsigned int*)SEG7_DISPLAY_ADDRESS, remainingTime);
+				update_leds((volatile unsigned int*)LEDS_BASE_ADDRESS, currentPlayer);
+                update_timer_display((volatile unsigned int*)SEG7_DISPLAY_ADDRESS, remainingTime, currentPlayer);
             }
-        }
-
-        update_timer_display((volatile unsigned int*)SEG7_DISPLAY_ADDRESS, remainingTime);
+        } 
+		
+		update_timer_display((volatile unsigned int*)SEG7_DISPLAY_ADDRESS, remainingTime, currentPlayer); // where decreents occur
 
 		if (read_spacebar() && !spacebarPressed) {
     		spacebarPressed = true; // prevent multiple fills on a single press
@@ -266,10 +265,11 @@ int main() {
 			printf("Player 1's score: %d\n", scorePlayer1);
 			printf("Player 2's score: %d\n", scorePlayer2);
 
-			display_score(scorePlayer1, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER1);
-			display_score(scorePlayer2, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER2);
+			//display_score(scorePlayer1, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER1);
+			//display_score(scorePlayer2, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER2);
 
 			update_leds((volatile unsigned int*)LEDS_BASE_ADDRESS, currentPlayer);
+			
 
 			// check if the game has ended
 			gameEnd = isGameOver(playerBoard);
@@ -277,6 +277,8 @@ int main() {
 			// correctly toggle currentPlayer only once after all actions are done
 			if (!gameEnd) {
 				currentPlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
+				int remainingTime = 10;
+				update_timer_display((volatile unsigned int*)SEG7_DISPLAY_ADDRESS, remainingTime, currentPlayer);
 			}
 
 		} else if (!read_spacebar()) {
@@ -575,11 +577,6 @@ bool read_spacebar() {
     return false; // spacebar was not pressed
 }
 
-// plays a sound
-void play_ding(volatile unsigned int* audio) {
-    *audio = 0x1; // write a value to start playing the ding sound
-}
-
 void waitForMouseClick() {
     unsigned char byte1 = 0, byte2 = 0, byte3 = 0;
     int PS2_data, RVALID;
@@ -698,4 +695,10 @@ bool read_timer() {
         return true;
     }
     return false;
+}
+
+void update_timer_display(volatile unsigned int* seg7_display, int remainingTime, int currentPlayer) {
+    // This function assumes that the display_score function is adapted to show time
+    // You might need to adapt it to fit your seven-segment display configuration
+    display_score(remainingTime, seg7_display, currentPlayer);
 }
