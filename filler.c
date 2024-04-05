@@ -36,6 +36,8 @@
 #define ABS(x) (((x) > 0) ? (x) : -(x))
 #define FALSE 0
 #define TRUE 1
+#define TURN_TIME_LIMIT 10 // 10 seconds time limit for each player's turn
+#define CLOCKS_PER_SECOND 50000
 
 	
 /* COLORS */
@@ -57,6 +59,7 @@ int pixel_buffer_start;
 const int RESOLUTION_Y = 240;
 const int RESOLUTION_X = 320;
 volatile unsigned char last_ps2_data = 0;
+int remainingTime = TURN_TIME_LIMIT; // Remaining time in seconds
 
 // RGB colors that the player can pick
 const unsigned short RGB565_COLORS[COLOR_COUNT] = {
@@ -108,7 +111,11 @@ bool read_spacebar();
 void printboardoutline(int (*)[BOARD_SIZE], unsigned short (*)[BOARD_SIZE], int, unsigned short, unsigned short);
 void waitForMouseClick();
 void highlightEdges(unsigned short (*)[BOARD_SIZE], unsigned short);
-bool isEdge(unsigned short (*)[BOARD_SIZE], int, int, unsigned short); 
+bool isEdge(unsigned short (*)[BOARD_SIZE], int, int, unsigned short);
+bool read_timer(); 
+
+void update_timer_display(volatile unsigned int* seg7_display, int remainingTime, int currentPlayer);
+
 
 
 /* MISCELLANEOUS */
@@ -177,6 +184,7 @@ int main() {
     int gameEnd = 0;
     int selectedColor;
 	bool spacebarPressed = false; 
+	int remainingTime = 10;
 	srand(time(NULL));
 	
 	volatile int * pixel_ctrl_ptr = (int *) SYNC_ADDRESS;
@@ -185,7 +193,7 @@ int main() {
     clear_screen();
     displayImage(0, 0, 240, 320, Image);
 
-    // wait for a mouse click before proceeding
+    // wait for a mouse click (space) before proceeding
     waitForMouseClick();
 	
 	clear_screen();
@@ -209,10 +217,12 @@ int main() {
 			int scorePlayer1 = 1;
     		int scorePlayer2 = 1;
 			update_leds((volatile unsigned int*)LEDS_BASE_ADDRESS, currentPlayer);
-			display_score(scorePlayer1, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER1);
-    		display_score(scorePlayer2, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER2);
+			//display_score(scorePlayer1, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER1);
+    		//display_score(scorePlayer2, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER2);
+			remainingTime = 10;
+			update_timer_display((volatile unsigned int*)SEG7_DISPLAY_ADDRESS, remainingTime, currentPlayer);
 		}
-		
+
 		if (read_spacebar() && !spacebarPressed) {
     		spacebarPressed = true; // prevent multiple fills on a single press
 
@@ -241,10 +251,11 @@ int main() {
 			printf("Player 1's score: %d\n", scorePlayer1);
 			printf("Player 2's score: %d\n", scorePlayer2);
 
-			display_score(scorePlayer1, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER1);
-			display_score(scorePlayer2, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER2);
+			//display_score(scorePlayer1, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER1);
+			//display_score(scorePlayer2, (volatile unsigned int*)SEG7_DISPLAY_ADDRESS, PLAYER2);
 
 			update_leds((volatile unsigned int*)LEDS_BASE_ADDRESS, currentPlayer);
+			
 
 			// check if the game has ended
 			gameEnd = isGameOver(playerBoard);
@@ -253,10 +264,28 @@ int main() {
 			if (!gameEnd) {
 				currentPlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
 			}
-
+			remainingTime = 10;
+			update_timer_display((volatile unsigned int*)SEG7_DISPLAY_ADDRESS, remainingTime, currentPlayer);
 		} else if (!read_spacebar()) {
     		spacebarPressed = false; // ensure we can detect the next press
 		}	
+
+		if (read_timer()) {
+        	remainingTime--;
+            if (remainingTime < 0) {
+                // Time's up, switch to the next player
+                currentPlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
+                oppositePlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
+                remainingTime = 10; // Reset the timer for the next player
+                // Update the display for the new player and reset time
+				update_leds((volatile unsigned int*)LEDS_BASE_ADDRESS, currentPlayer);
+                update_timer_display((volatile unsigned int*)SEG7_DISPLAY_ADDRESS, remainingTime, currentPlayer);
+            } else {
+				update_timer_display((volatile unsigned int*)SEG7_DISPLAY_ADDRESS, remainingTime, currentPlayer);
+			}
+        } 
+
+		update_timer_display((volatile unsigned int*)SEG7_DISPLAY_ADDRESS, remainingTime, currentPlayer); // where decreents occur
 		prevKey0Pressed = key0Pressed;
         // delay can be added here to manage game pace and debounce handling
     }
@@ -550,11 +579,6 @@ bool read_spacebar() {
     return false; // spacebar was not pressed
 }
 
-// plays a sound
-void play_ding(volatile unsigned int* audio) {
-    *audio = 0x1; // write a value to start playing the ding sound
-}
-
 void waitForMouseClick() {
     unsigned char byte1 = 0, byte2 = 0, byte3 = 0;
     int PS2_data, RVALID;
@@ -660,4 +684,23 @@ void printboardoutline(int playerBoard[BOARD_SIZE][BOARD_SIZE], unsigned short b
             }
         }
     }
+}
+
+bool read_timer() {
+    // Placeholder for decrementing a counter every second
+    // This could be based on a hardware timer interrupt or a similar mechanism
+    // Return true when a second has passed, false otherwise
+    static unsigned int counter = 0;
+    counter++;
+    if (counter >= CLOCKS_PER_SECOND) { // Assuming CLOCKS_PER_SECOND is defined elsewhere
+        counter = 0;
+        return true;
+    }
+    return false;
+}
+
+void update_timer_display(volatile unsigned int* seg7_display, int remainingTime, int currentPlayer) {
+    // This function assumes that the display_score function is adapted to show time
+    // You might need to adapt it to fit your seven-segment display configuration
+    display_score(remainingTime, seg7_display, currentPlayer);
 }
