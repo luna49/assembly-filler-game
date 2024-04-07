@@ -217,9 +217,67 @@ int main() {
     while (!gameEnd) {
         bool key0Pressed = read_key0(); // check the current state of key 0
 		
-		// testing outline animation
-		printOutline(15, 190, WHITE);
-		printOutline(15, 190, 0xd6d8);
+		// outline animation
+		int switch_state = read_switches();
+
+		switch (switch_state) {
+			case 5:
+				printOutline(15, 190, WHITE);
+				printOutline(65, 190, 0xd657);
+				printOutline(115, 190, 0xd657);
+				printOutline(165, 190, 0xd657);
+				printOutline(215, 190, 0xd657);
+				printOutline(265, 190, 0xd657);
+				break;
+			case 4:
+				printOutline(65, 190, WHITE);
+				printOutline(15, 190, 0xd657);
+				printOutline(115, 190, 0xd657);
+				printOutline(165, 190, 0xd657);
+				printOutline(215, 190, 0xd657);
+				printOutline(265, 190, 0xd657);
+				break;
+			case 3:
+				printOutline(115, 190, WHITE);
+				printOutline(15, 190, 0xd657);
+				printOutline(65, 190, 0xd657);
+				printOutline(165, 190, 0xd657);
+				printOutline(215, 190, 0xd657);
+				printOutline(265, 190, 0xd657);
+				break;
+			case 2:
+				printOutline(165, 190, WHITE);
+				printOutline(15, 190, 0xd657);
+				printOutline(65, 190, 0xd657);
+				printOutline(115, 190, 0xd657);
+				printOutline(215, 190, 0xd657);
+				printOutline(265, 190, 0xd657);
+				break;
+			case 1:
+				printOutline(215, 190, WHITE);
+				printOutline(15, 190, 0xd657);
+				printOutline(65, 190, 0xd657);
+				printOutline(115, 190, 0xd657);
+				printOutline(165, 190, 0xd657);
+				printOutline(265, 190, 0xd657);
+				break;
+			case 0:
+				printOutline(265, 190, WHITE);
+				printOutline(15, 190, 0xd657);
+				printOutline(65, 190, 0xd657);
+				printOutline(115, 190, 0xd657);
+				printOutline(165, 190, 0xd657);
+				printOutline(215, 190, 0xd657);
+				break;
+			default:
+				printOutline(15, 190, 0xd657);
+				printOutline(65, 190, 0xd657);
+				printOutline(115, 190, 0xd657);
+				printOutline(165, 190, 0xd657);
+				printOutline(215, 190, 0xd657);
+				printOutline(265, 190, 0xd657);
+				break;
+		}
 
         // execute reset on key release (transition from pressed to not pressed)
         if (prevKey0Pressed && !key0Pressed) {
@@ -371,7 +429,7 @@ int read_switches() {
             return i; // return the switch number (maps to color index)
         }
     }
-    return 0; // default to 0 if no switch is on
+    return -1; // default to -1 if no switch is on
 }
 
 // reads reset input from key 0
