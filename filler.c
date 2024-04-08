@@ -90,6 +90,7 @@ Point dequeue(Point queue[], int *front) {
 void plot_pixels(int, int, short int);
 void clear_screen();
 void displayImage(int, int, int, int, int (*)[SCREEN_WIDTH]);
+void displayScoreImage(int, int, int, int, int (*)[15]);
 bool isValid(int, int, unsigned short (*)[BOARD_SIZE], unsigned short);
 int read_switches();
 int read_key0();
@@ -413,6 +414,18 @@ void displayImage(int startingX, int startingY, int imageHeight, int imageWidth,
 	
 	for(verticle = 0; verticle < imageHeight; verticle++){
 		for(horizontal = 0; horizontal < imageWidth; horizontal++){
+			plot_pixels(horizontal+startingX, verticle+startingY, imagePointer[verticle][horizontal]);
+		}
+	}	
+}
+
+// displays score on VGA
+void displayScoreImage(int startingX, int startingY, int imageHeight, int imageWidth, int imagePointer[25][15]){
+	
+	int horizontal, verticle;
+	
+	for(verticle = 0; verticle < 25; verticle++){
+		for(horizontal = 0; horizontal < 15; horizontal++){
 			plot_pixels(horizontal+startingX, verticle+startingY, imagePointer[verticle][horizontal]);
 		}
 	}	
