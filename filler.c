@@ -268,8 +268,6 @@ int main() {
 	displayHexImage(257, 129, 25, 15, Num0);
 	displayHexImage(286, 129, 25, 15, Num0);
 	
-	displayIcon(19, 18, 48, 42, g1);
-	displayIcon(259, 18, 48, 42, g1);
 	
     // after mouse click, initialize and display the game board
     initializeBoard(board, playerBoard);
@@ -366,7 +364,55 @@ int main() {
 
     		int switchState = read_switches(); // read switch to determine the colour
     		unsigned short selectedColor = RGB565_COLORS[switchState]; 
-	
+			
+			if (currentPlayer == PLAYER1) {
+				switch (switchState) {
+					case 5:
+						displayIcon(19, 18, 48, 42, ye3);
+						break;
+					case 4:
+						displayIcon(19, 18, 48, 42, m3);
+						break;
+					case 3:
+						displayIcon(19, 18, 48, 42, c3);
+						break;
+					case 2:
+						displayIcon(19, 18, 48, 42, b3);
+						break;
+					case 1:
+						displayIcon(19, 18, 48, 42, g3);
+						break;
+					case 0:
+						displayIcon(19, 18, 48, 42, r3);
+						break;
+					default:
+						break;
+				}
+			} else if (currentPlayer == PLAYER2) {
+				switch (switchState) {
+					case 5:
+						displayIcon(259, 18, 48, 42, ye1);
+						break;
+					case 4:
+						displayIcon(259, 18, 48, 42, m1);
+						break;
+					case 3:
+						displayIcon(259, 18, 48, 42, c1);
+						break;
+					case 2:
+						displayIcon(259, 18, 48, 42, b1);
+						break;
+					case 1:
+						displayIcon(259, 18, 48, 42, g1);
+						break;
+					case 0:
+						displayIcon(259, 18, 48, 42, r1);
+						break;
+					default:
+						break;
+				}
+			}
+					
     		oppositePlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1; // swap players
 			int startX = (oppositePlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
 			int startY = (oppositePlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
