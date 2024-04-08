@@ -102,6 +102,7 @@ int isGameOver(int (*)[BOARD_SIZE]);
 void draw_square(int, int, short int);
 void draw_color(int, int, short int);
 void printBoardVGA(unsigned short (*)[BOARD_SIZE]);
+void printMenuVGA(unsigned short menu[6]);
 
 void printOutline (int, int, short int);
 
