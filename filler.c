@@ -210,7 +210,10 @@ int main() {
 	
 	displayImage(0, 0, 240, 320, BgImage);
 
-	displayHexImage(17, 130, 25, 15, Num0);
+	displayHexImage(18, 129, 25, 15, Num0);
+	displayHexImage(47, 129, 25, 15, Num0);
+	displayHexImage(257, 129, 25, 15, Num0);
+	displayHexImage(286, 129, 25, 15, Num0);
 
     // after mouse click, initialize and display the game board
     initializeBoard(board, playerBoard);
