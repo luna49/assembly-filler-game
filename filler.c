@@ -353,7 +353,7 @@ int main() {
 
 		if (read_timer()) {
         	remainingTime--;
-            if (remainingTime < 0) {
+            if (remainingTime <= 0) {
                 // Time's up, switch to the next player
                 currentPlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
                 oppositePlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1;
