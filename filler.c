@@ -364,8 +364,17 @@ int main() {
 
     		int switchState = read_switches(); // read switch to determine the colour
     		unsigned short selectedColor = RGB565_COLORS[switchState]; 
+					
+    		oppositePlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1; // swap players
+			int startX = (oppositePlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
+			int startY = (oppositePlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
+
+			unsigned short OppColor = board[startX][startY];
+					
+			fill(playerBoard, board, currentPlayer, selectedColor, OppColor);
+			highlightEdges(board, selectedColor);
 			
-			if (currentPlayer == PLAYER1) {
+			if (currentPlayer == PLAYER1 && OppColor != selectedColor) {
 				switch (switchState) {
 					case 5:
 						displayIcon(19, 18, 48, 42, ye3);
@@ -388,7 +397,7 @@ int main() {
 					default:
 						break;
 				}
-			} else if (currentPlayer == PLAYER2) {
+			} else if (currentPlayer == PLAYER2 && OppColor != selectedColor) {
 				switch (switchState) {
 					case 5:
 						displayIcon(259, 18, 48, 42, ye1);
@@ -412,15 +421,6 @@ int main() {
 						break;
 				}
 			}
-					
-    		oppositePlayer = (currentPlayer == PLAYER1) ? PLAYER2 : PLAYER1; // swap players
-			int startX = (oppositePlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
-			int startY = (oppositePlayer == PLAYER1) ? 0 : BOARD_SIZE - 1;
-
-			unsigned short OppColor = board[startX][startY];
-					
-			fill(playerBoard, board, currentPlayer, selectedColor, OppColor);
-			highlightEdges(board, selectedColor);
 
 			for (int i = 0; i<100000; i++){
 				int a = a+1;
